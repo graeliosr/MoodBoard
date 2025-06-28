@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #1a1a2e;
+            color: #e6e6e6;
+        }
+        .handwritten {
+            font-family: 'Indie Flower', cursive;
+        }
+        .sticky-note {
+            transform: rotate(0deg);
+            transition: all 0.3s ease;
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.4);
+        }
+        .sticky-note:hover {
+            transform: scale(1.05) rotate(0deg);
+            z-index: 10;
+        }
+        
+        /* Person-specific colors */
+        .person-owner { 
+            background-color: #118ab2; 
+            color: #fff; 
+        }
+        .person-guest { 
+            background-color: #ffd166; 
+            color: #222; 
+        }
+        
+        .delete-btn {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .sticky-note:hover .delete-btn {
+            opacity: 1;
+        }
+        
+        /* For mobile, always show delete button */
+        @media (max-width: 640px) {
+            .delete-btn {
+                opacity: 0.7;
+            }
+        }
+        
+        .star {
+            animation: twinkle 2s infinite alternate;
+        }
+        
+        @keyframes twinkle {
+            from { opacity: 0.4; }
+            to { opacity: 1; }
+        }
+        
+        .avatar {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+        
+        .person-selector {
+            transition: all 0.2s ease;
+        }
+        
+        .person-selector:hover, .person-selector.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Stars background -->
+    <div class="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div class="star absolute h-1 w-1 bg-white rounded-full top-[10%] left-[20%]"></div>
+        <div class="star absolute h-1 w-1 bg-white rounded-full top-[15%] left-[80%]"></div>
+        <div class="star absolute h-2 w-2 bg-white rounded-full top-[30%] left-[40%]"></div>
+        <div class="star absolute h-1 w-1 bg-white rounded-full top-[45%] left-[70%]"></div>
+        <div class="star absolute h-1 w-1 bg-white rounded-full top-[60%] left-[15%]"></div>
+        <div class="star absolute h-2 w-2 bg-white rounded-full top-[75%] left-[60%]"></div>
+        <div class="star absolute h-1 w-1 bg-white rounded-full top-[85%] left-[30%]"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 relative z-10">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-5xl font-bold handwritten text-yellow-300">Mood Journal</h1>
+            <p class="text-sm md:text-lg text-gray-400 mt-2">Track your thoughts</p>
+        </header>
+
+        <div class="max-w-md mx-auto bg-gray-800 rounded-xl p-5 mb-8 shadow-lg">
+            <h2 class="text-xl font-bold mb-4 handwritten text-purple-400">New Entry</h2>
+            
+            <!-- Person selector -->
+            <div class="mb-5">
+                <label class="block mb-3 font-medium">Who's writing?</label>
+                <div class="flex justify-center gap-6" id="person-selector">
+                    <div class="person-selector flex flex-col items-center cursor-pointer p-2 rounded-lg" data-person="owner">
+                        <div class="avatar person-owner mb-1">O</div>
+                        <span>Owner</span>
+                    </div>
+                    <div class="person-selector flex flex-col items-center cursor-pointer p-2 rounded-lg" data-person="guest">
+                        <div class="avatar person-guest mb-1">G</div>
+                        <span>Guest</span>
+                    </div>
+                </div>
+            </div>
+            
+            <form id="journal-form" class="space-y-4">
+                <input type="hidden" id="entry-person" value="owner">
+                <div>
+                    <label for="entry-title" class="block mb-1 font-medium">Title (optional)</label>
+                    <input type="text" id="entry-title" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-white" placeholder="How are you feeling?">
+                </div>
+                <div>
+                    <label for="entry-content" class="block mb-1 font-medium">Your thoughts</label>
+                    <textarea id="entry-content" rows="3" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-white" placeholder="Write your thoughts here..." required></textarea>
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Add to Moodboard
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Filter options -->
+        <div class="max-w-md mx-auto mb-6">
+            <div class="flex items-center justify-center gap-3">
+                <span class="text-gray-400">Filter:</span>
+                <button class="filter-btn px-4 py-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors active" data-filter="all">All</button>
+                <button class="filter-btn px-4 py-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors" data-filter="owner">Owner</button>
+                <button class="filter-btn px-4 py-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors" data-filter="guest">Guest</button>
+            </div>
+        </div>
+
+        <h2 class="text-2xl font-bold mb-4 text-center handwritten text-blue-400">Mood Board</h2>
+        
+        <div id="mood-board" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            <!-- Sticky notes will be added here -->
+        </div>
+        
+        <div id="empty-state" class="text-center py-8">
+            <div class="w-16 h-16 mx-auto mb-3 opacity-50">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <p class="text-lg text-gray-500 handwritten">Your mood board is empty. Add your first entry!</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const journalForm = document.getElementById('journal-form');
+            const moodBoard = document.getElementById('mood-board');
+            const emptyState = document.getElementById('empty-state');
+            const personSelectors = document.querySelectorAll('.person-selector');
+            const entryPersonInput = document.getElementById('entry-person');
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            
+            // Set default person
+            personSelectors[0].classList.add('active');
+            
+            // Person selector functionality
+            personSelectors.forEach(selector => {
+                selector.addEventListener('click', function() {
+                    // Remove active class from all selectors
+                    personSelectors.forEach(s => s.classList.remove('active'));
+                    
+                    // Add active class to clicked selector
+                    this.classList.add('active');
+                    
+                    // Update hidden input
+                    entryPersonInput.value = this.dataset.person;
+                });
+            });
+            
+            // Filter functionality
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    const filter = this.dataset.filter;
+                    filterEntries(filter);
+                });
+            });
+            
+            function filterEntries(filter) {
+                const entries = document.querySelectorAll('.sticky-note');
+                
+                entries.forEach(entry => {
+                    if (filter === 'all' || entry.dataset.person === filter) {
+                        entry.classList.remove('hidden');
+                    } else {
+                        entry.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Load entries from localStorage
+            loadEntries();
+            
+            journalForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const titleInput = document.getElementById('entry-title');
+                const contentInput = document.getElementById('entry-content');
+                const personInput = document.getElementById('entry-person');
+                
+                const title = titleInput.value.trim();
+                const content = contentInput.value.trim();
+                const person = personInput.value;
+                
+                if (content) {
+                    // Allow empty title
+                    addEntry(title || "Untitled Note", content, person);
+                    
+                    // Clear form
+                    titleInput.value = '';
+                    contentInput.value = '';
+                    
+                    // Focus on content for quick entry of next note
+                    contentInput.focus();
+                }
+            });
+            
+            function addEntry(title, content, person) {
+                const now = new Date();
+                const id = 'entry-' + now.getTime();
+                const dateString = now.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+                const timeString = now.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                // Create entry object
+                const entry = {
+                    id: id,
+                    title: title,
+                    content: content,
+                    date: dateString,
+                    time: timeString,
+                    person: person
+                };
+                
+                // Save to localStorage
+                saveEntry(entry);
+                
+                // Add to DOM
+                createStickyNote(entry);
+                
+                // Hide empty state if needed
+                checkEmptyState();
+            }
+            
+            function createStickyNote(entry) {
+                const stickyNote = document.createElement('div');
+                stickyNote.id = entry.id;
+                stickyNote.dataset.person = entry.person;
+                stickyNote.className = `sticky-note person-${entry.person} rounded-lg p-4 flex flex-col h-auto min-h-[180px]`;
+                stickyNote.style.transform = `rotate(${Math.random() * 4 - 2}deg)`;
+                
+                // Get person name with first letter capitalized
+                const personName = entry.person.charAt(0).toUpperCase() + entry.person.slice(1);
+                
+                stickyNote.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-lg handwritten">${escapeHTML(entry.title)}</h3>
+                        <button class="delete-btn text-gray-800 hover:text-red-600 transition-colors" data-id="${entry.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="flex-grow overflow-auto mb-3 handwritten text-lg">
+                        ${escapeHTML(entry.content)}
+                    </div>
+                    <div class="flex justify-between items-center text-sm opacity-75 mt-auto">
+                        <span>${entry.date} at ${entry.time}</span>
+                        <div class="flex items-center">
+                            <div class="avatar person-${entry.person} mr-1 text-xs" style="width: 20px; height: 20px;">
+                                ${entry.person === 'owner' ? 'O' : 'G'}
+                            </div>
+                            <span>${personName}</span>
+                        </div>
+                    </div>
+                `;
+                
+                moodBoard.prepend(stickyNote);
+                
+                // Add delete event listener
+                const deleteBtn = stickyNote.querySelector('.delete-btn');
+                deleteBtn.addEventListener('click', function() {
+                    deleteEntry(entry.id);
+                });
+            }
+            
+            function deleteEntry(id) {
+                // Remove from DOM
+                const stickyNote = document.getElementById(id);
+                if (stickyNote) {
+                    stickyNote.classList.add('scale-0', 'opacity-0');
+                    setTimeout(() => {
+                        stickyNote.remove();
+                        checkEmptyState();
+                    }, 300);
+                }
+                
+                // Remove from localStorage
+                const entries = getEntries();
+                const updatedEntries = entries.filter(entry => entry.id !== id);
+                localStorage.setItem('moodJournalEntries', JSON.stringify(updatedEntries));
+            }
+            
+            function loadEntries() {
+                const entries = getEntries();
+                
+                if (entries.length > 0) {
+                    entries.forEach(entry => {
+                        // Map old person values to new ones
+                        if (entry.person === 'you' || entry.person === 'alice' || 
+                            entry.person === 'dana' || entry.person === 'emma') {
+                            entry.person = 'owner';
+                        } else if (entry.person === 'friend' || entry.person === 'bob' || 
+                                  entry.person === 'charlie') {
+                            entry.person = 'guest';
+                        }
+                        
+                        // If no person property exists
+                        if (!entry.person) {
+                            entry.person = 'owner';
+                        }
+                        
+                        createStickyNote(entry);
+                    });
+                }
+                
+                checkEmptyState();
+            }
+            
+            function getEntries() {
+                const entriesJSON = localStorage.getItem('moodJournalEntries');
+                return entriesJSON ? JSON.parse(entriesJSON) : [];
+            }
+            
+            function saveEntry(entry) {
+                const entries = getEntries();
+                entries.push(entry);
+                localStorage.setItem('moodJournalEntries', JSON.stringify(entries));
+            }
+            
+            function checkEmptyState() {
+                if (moodBoard.children.length > 0) {
+                    emptyState.classList.add('hidden');
+                } else {
+                    emptyState.classList.remove('hidden');
+                }
+            }
+            
+            function escapeHTML(str) {
+                return str.replace(/[&<>'"]/g, 
+                    tag => ({
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        "'": '&#39;',
+                        '"': '&quot;'
+                    }[tag]));
+            }
+            
+            // Add touch support for mobile
+            document.addEventListener('touchstart', function() {
+                // This is just to enable :hover effects on mobile
+            }, false);
+        });
+    </script>
+</body>
+</html>
